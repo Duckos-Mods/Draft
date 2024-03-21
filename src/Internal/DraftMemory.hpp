@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include "DraftUtils.hpp"
+#include "DraftASMTypes.hpp"
 
 namespace Draft 
 {
@@ -40,9 +41,7 @@ namespace Draft
             uint64_t protection = static_cast<uint64_t>(protectionFlags);
 
             if (protection == 7)
-            {
-                return PAGE_EXECUTE_READWRITE; // Hack job
-            }
+                return PXW;
 
             if (protection & static_cast<uint64_t>(MemoryProtection::Read)) {
                 flags |= PR;
@@ -145,7 +144,7 @@ namespace Draft
     T* RawRWEAlloc(size_t count, size_t alignment = 0x10) {
         T* ptr = RawAlineAlloc<T>(count, alignment);
         DRAFT_THROW_IF(ptr == nullptr, "Failed to allocate memory");
-        SetProtection<T>(ptr, count, MemoryProtection::ReadWriteExecute);
+        SetProtection(ptr, count, MemoryProtection::ReadWriteExecute);
         return ptr;
     }
 
@@ -201,6 +200,8 @@ namespace Draft
     std::unique_ptr<T> UniqueRWEAlloc(size_t count, size_t alignment = 0x10) {
         return std::unique_ptr<T>(RawRWEAlloc<T>(count, alignment), RawFree<T>);
     }
+
+    // UTILITIES
 
 
 }
