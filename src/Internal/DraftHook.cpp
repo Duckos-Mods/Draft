@@ -45,6 +45,7 @@ namespace Draft
 		}
 
 		SetProtection(hookFunction, sizes, MemoryProtection::Execute);
+		m_isInstalled = true;
 		return true;
 	}
 	void Hook::Uninstall()
