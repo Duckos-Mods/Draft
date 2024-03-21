@@ -7,6 +7,7 @@ using ProtectionType = DWORD;
 constexpr ProtectionType PX = PAGE_EXECUTE;
 constexpr ProtectionType PW = PAGE_READWRITE;
 constexpr ProtectionType PR = PAGE_READONLY;
+constexpr ProtectionType PXW = PAGE_EXECUTE_READWRITE;
 #elif defined(__linux__)
 #include <sys/mman.h>
 #include <unistd.h>
@@ -14,6 +15,7 @@ using ProtectionType = int;
 constexpr ProtectionType PX = PROT_EXEC;
 constexpr ProtectionType PW = PROT_WRITE;
 constexpr ProtectionType PR = PROT_READ;
+constexpr ProtectionType PXW = PAGE_EXECUTE_READWRITE;
 #else
 #error "Unsupported platform"
 #endif
@@ -38,3 +40,9 @@ constexpr ProtectionType PR = PROT_READ;
 #define DRAFT_DEBUG_LOG(x)
 #define DRAFT_DEBUG_CODE(x)
 #endif
+
+template<typename Enum, typename ReturnType = int>
+constexpr ReturnType EnumToUnderlying(Enum e) noexcept
+{
+	return static_cast<ReturnType>(e);
+}
