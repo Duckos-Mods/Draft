@@ -1,11 +1,26 @@
 #include "Draft.hpp"
+#include <intrin.h>
 
-[[nodiscard]] short getFive() {
-	return 5;
+Draft::Hook hook;
+[[nodiscard]] int printHooked(int i)
+{
+	std::cout << "Hooked" << std::endl;
+	std::cout << "Hooked" << std::endl;
+	std::cout << "Hooked" << std::endl;
+	std::cout << "Hooked" << std::endl;
+
+	auto data = hook.fastCall<int, int>(i*10);
+	std::cout << "Return value: " << data << std::endl;
+	return data * 1000;
 }
 
-[[nodiscard]] short get10() {
-	return 10;
+[[nodiscard]] int printRandom(int i)
+{
+	std::cout << "Random" << std::endl;
+	std::cout << "Random" << std::endl;
+	std::cout << "Random" << std::endl;
+	std::cout << "Random" << std::endl;
+	return 1000 + i;
 }
 
 void* funcRefToReallLocation(void* pFunction) {
@@ -26,17 +41,13 @@ void* functionPointerToVoidPointer(T pFunction) {
 }
 
 int main() {
-	Draft::Hook hook;
-	void* func = funcRefToReallLocation(functionPointerToVoidPointer(&getFive));
-	void* redirect = funcRefToReallLocation(functionPointerToVoidPointer(&get10));
-	short(*ptr)() = &getFive;
-	std::cout << "Original: " << ptr() << std::endl;
-	if (!hook.Install(func, redirect, Draft::HookInstallMethod::JumpAutomaticInstall, Draft::AllocationMethod::NearAlloc, 0))
-	{
-		std::cout << "Failed to install hook" << std::endl;
-		return 1;
-	}
-	std::cout << "Hooked: " << ptr() << std::endl;
+	void* pHooked = funcRefToReallLocation(printHooked);
+	void* pRandom = funcRefToReallLocation(printRandom);
+	std::cout << "Before hook\n"<< printRandom(100) << std::endl;
+	
+	hook.Install(pRandom, printHooked);
+	std::cout << "After hook\n"<< printRandom(100) << std::endl;
 	hook.Uninstall();
+	std::cout << "After uninstall\n"<< printRandom(100) << std::endl;
 	return 0;
 } 
