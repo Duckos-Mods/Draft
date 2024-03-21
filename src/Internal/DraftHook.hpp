@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <memory>
 #include "DraftMemory.hpp"
+#include "DraftASM.hpp"
 
 namespace Draft
 {
@@ -63,7 +64,7 @@ namespace Draft
         void* ptr = RawAlineAlloc<uint8_t>(EnumToUnderlying(HookInstallMethod::Jump14byteInstall), alignment);
         DRAFT_THROW_IF(ptr == nullptr, "Failed to allocate memory");
         void* funcPtr = *reinterpret_cast<void**>(&function);
-        jmp64 jmp(reinterpret_cast<uint64_t>(funcPtr);
+        jmp64 jmp(reinterpret_cast<uint64_t>(funcPtr));
         ASMHandler handler(ptr, EnumToUnderlying(HookInstallMethod::Jump14byteInstall));
         handler.Write(jmp);
         SetProtection(ptr, EnumToUnderlying(HookInstallMethod::Jump14byteInstall), MemoryProtection::Execute);
