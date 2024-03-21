@@ -1,7 +1,7 @@
 #include "DraftASM.hpp"
 #undef min
 #undef max
-#include <zasm/decoder.h>
+#include <zasm/zasm.hpp>
 
 namespace Draft {
 
