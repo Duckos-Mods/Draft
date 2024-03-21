@@ -21,7 +21,14 @@ Draft::Hook hook;
 int main() {
 
 	auto ptr = printRandom;
+	std::cout << "Before hooking: " << ptr(10) << "\n";
 
+	hook.Install(Draft::LocalFunctionPointerToRawAddress(ptr), Draft::LocalFunctionPointerToRawAddress(printHooked));
+	std::cout << "After hooking: " << ptr(10) << "\n";
+
+	hook.Uninstall();
+
+	std::cout << "After unhooking: " << ptr(10) << "\n";
 
 	return 0;
 } 
