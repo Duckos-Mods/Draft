@@ -1,0 +1,6 @@
+[submodule "Deps/zasm"]
+	path = Deps/zasm
+	url = https://github.com/zyantific/zasm.git
+[submodule "Deps/zyanCore"]
+	path = Deps/zyanCore
+	url = https://github.com/zyantific/zycore-c.git

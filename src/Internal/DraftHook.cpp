@@ -15,6 +15,10 @@ namespace Draft
 		// Test if the function is large enough to install the hook
 		GenerateTrampoline(targetFunction, allocationMethod, alignment, installMethod);
 
+		/**
+		* We arnt using ZASM here because we arent doing anything fancy with the instructions
+		*/
+
 		ASMHandler asmHandler(reinterpret_cast<uint8_t*>(targetFunction), sizes);
 		switch (installMethod)
 		{
