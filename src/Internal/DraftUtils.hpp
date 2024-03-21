@@ -41,8 +41,18 @@ constexpr ProtectionType PXW = PAGE_EXECUTE_READWRITE;
 #define DRAFT_DEBUG_CODE(x)
 #endif
 
-template<typename Enum, typename ReturnType = int>
-constexpr ReturnType EnumToUnderlying(Enum e) noexcept
+namespace Draft
 {
-	return static_cast<ReturnType>(e);
+	template<typename Enum, typename ReturnType = int>
+	constexpr ReturnType EnumToUnderlying(Enum e) noexcept
+	{
+		return static_cast<ReturnType>(e);
+	}
+
+
+	template <typename FunctionPtr>
+	void* LocalFunctionPointerToRawAddress(FunctionPtr ptr)
+	{
+		return *reinterpret_cast<void**>(&ptr);
+	}
 }
