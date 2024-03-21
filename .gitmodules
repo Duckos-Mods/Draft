@@ -1,0 +1,3 @@
+[submodule "Deps/zasm"]
+	path = Deps/zasm
+	url = https://github.com/zyantific/zasm.git
