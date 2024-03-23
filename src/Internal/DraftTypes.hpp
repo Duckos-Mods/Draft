@@ -1,11 +1,14 @@
 #pragma once
 #include <cstdint>
+#include <array>
+#include "DraftUtils.hpp"
+#include <array>
 
 
 #define NewRegisterDef(registerName, regLowName, regHighName) \
-	union registerName \
+	union \
 	{ \
-		uint64_t value; \
+		uint64_t registerName; \
 		struct \
 		{ \
 			uint32_t regLowName; \
@@ -14,8 +17,11 @@
 	}
 namespace Draft
 {
+	// Float shenanigans
+	using uint128_t = uint64_t[2];
+
     // All the registers that are used in x86-64
-    enum class Registers
+    enum class Registers : uint16_t
     {
         RAX,
         RBX,
@@ -38,7 +44,7 @@ namespace Draft
 
     union Register64Bit
     {
-        uint64_t value;
+		uint64_t value = 0;
         struct 
         {
             uint32_t low;
@@ -49,25 +55,192 @@ namespace Draft
 
     class CPURegRepresentation
     {
-    public:
-        NewRegisterDef(RAX, EAX, EDX);
-        NewRegisterDef(RBX, EBX, EBX);
-		NewRegisterDef(RCX, ECX, ECX);
-		NewRegisterDef(RDX, EDX, EDX);
-		NewRegisterDef(RSI, ESI, ESI);
-		NewRegisterDef(RDI, EDI, EDI);
-		NewRegisterDef(RBP, EBP, EBP);
-		NewRegisterDef(RSP, ESP, ESP);
-    
-		NewRegisterDef(R8, R8D, R8D);
-		NewRegisterDef(R9, R9D, R9D);
-		NewRegisterDef(R10, R10D, R10D);
-		NewRegisterDef(R11, R11D, R11D);
-		NewRegisterDef(R12, R12D, R12D);
-		NewRegisterDef(R13, R13D, R13D);
-		NewRegisterDef(R14, R14D, R14D);
-		NewRegisterDef(R15, R15D, R15D);
+	public:
+		union {
+			uint64_t RAX = 1; struct {
+				uint32_t EAX; uint32_t EDX;
+			};
+		};
+		union {
+			uint64_t RBX = 2; struct {
+				uint32_t EBX;
+			};
+		};
+		union {
+			uint64_t RCX = 3; struct {
+				uint32_t ECX;
+			};
+		};
+		union {
+			uint64_t RDX = 4; struct {
+				uint32_t EDX;
+			};
+		};
+		union {
+			uint64_t RSI = 5; struct {
+				uint32_t ESI;
+			};
+		};
+		union {
+			uint64_t RDI = 6; struct {
+				uint32_t EDI;
+			};
+		};
+		union {
+			uint64_t RBP = 7; struct {
+				uint32_t EBP;
+			};
+		};
+		union {
+			uint64_t RSP = 8; struct {
+				uint32_t ESP;
+			};
+		};
+		union {
+			uint64_t R8 = 9; struct {
+				uint32_t R8D;
+			};
+		};
+		union {
+			uint64_t R9 = 10; struct {
+				uint32_t R9D;
+			};
+		};
+		union {
+			uint64_t R10 = 11; struct {
+				uint32_t R10D;
+			};
+		};
+		union {
+			uint64_t R11 = 12; struct {
+				uint32_t R11D;
+			};
+		};
+		union {
+			uint64_t R12 = 13; struct {
+				uint32_t R12D;
+			};
+		};
+		union {
+			uint64_t R13 = 14; struct {
+				uint32_t R13D;
+			};
+		};
+		union {
+			uint64_t R14 = 15; struct {
+				uint32_t R14D;
+			};
+		};
+		union {
+			uint64_t R15 = 16; struct {
+				uint32_t R15D;
+			};
+		};
+		// Floating point registers
+		union 
+		{
+			uint128_t XMM0;
+			std::array<float, 4> XMM0F;
+			std::array<double, 2> XMM0D;
+		};
+		union
+		{
+			uint128_t XMM1;
+			std::array<float, 4> XMM1F;
+			std::array<double, 2> XMM1D;
+		};
+		union
+		{
+			uint128_t XMM2;
+			std::array<float, 4> XMM2F;
+			std::array<double, 2> XMM2D;
+		};
+		union
+		{
+			uint128_t XMM3;
+			std::array<float, 4> XMM3F;
+			std::array<double, 2> XMM3D;
+		};
+		union
+		{
+			uint128_t XMM4;
+			std::array<float, 4> XMM4F;
+			std::array<double, 2> XMM4D;
+		};
+		union
+		{
+			uint128_t XMM5;
+			std::array<float, 4> XMM5F;
+			std::array<double, 2> XMM5D;
+		};
+		union
+		{
+			uint128_t XMM6;
+			std::array<float, 4> XMM6F;
+			std::array<double, 2> XMM6D;
+		};
+		union
+		{
+			uint128_t XMM7;
+			std::array<float, 4> XMM7F;
+			std::array<double, 2> XMM7D;
+		};
+		union
+		{
+			uint128_t XMM8;
+			std::array<float, 4> XMM8F;
+			std::array<double, 2> XMM8D;
+		};
+		union
+		{
+			uint128_t XMM9;
+			std::array<float, 4> XMM9F;
+			std::array<double, 2> XMM9D;
+		};
+		union
+		{
+			uint128_t XMM10;
+			std::array<float, 4> XMM10F;
+			std::array<double, 2> XMM10D;
+		};
+		union
+		{
+			uint128_t XMM11;
+			std::array<float, 4> XMM11F;
+			std::array<double, 2> XMM11D;
+		};
+		union
+		{
+			uint128_t XMM12;
+			std::array<float, 4> XMM12F;
+			std::array<double, 2> XMM12D;
+		};
+		union
+		{
+			uint128_t XMM13;
+			std::array<float, 4> XMM13F;
+			std::array<double, 2> XMM13D;
+		};
+		union
+		{
+			uint128_t XMM14;
+			std::array<float, 4> XMM14F;
+			std::array<double, 2> XMM14D;
+		};
+		union
+		{
+			uint128_t XMM15;
+			std::array<float, 4> XMM15F;
+			std::array<double, 2> XMM15D;
+		};
 
+		// EFLAGS and RFAGS
+		uint32_t EFLAGS = 0;
+		uint64_t RFLAGS = 0;
+
+
+	public:
+		CPURegRepresentation() = default;
 		static const char* GetRegisterName(Registers reg)
 		{
 			switch (reg)
@@ -108,7 +281,6 @@ namespace Draft
 				return "Unknown";
 			}
 		}
-
     };
 
 

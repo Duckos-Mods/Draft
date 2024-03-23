@@ -4,6 +4,7 @@
 #include <memory>
 #include "DraftMemory.hpp"
 #include "DraftASM.hpp"
+#include "DraftTypes.hpp"
 
 namespace Draft
 {
@@ -149,5 +150,47 @@ namespace Draft
         void* m_trampoline = nullptr; // Used to call the original function head that we overwrote then jump back to the original function
         UnkownFunctionData m_originalFunction; // The original function data
         bool m_isInstalled = false;
+    };
+
+    using InlineHookFunction = void(*)(CPURegRepresentation* regs);
+
+    class InlineHook
+    {
+    public:
+        InlineHook() = default;
+		~InlineHook() {
+			Uninstall();
+		}
+
+        bool Install(
+            UnkfuncPtr targetAddress,
+            InlineHookFunction hookFunction,
+            AllocationMethod allocationMethod = AllocationMethod::FarAlloc,
+            size_t alignment = 0x10
+        );
+
+        template<typename funcPtrType>
+        bool Install(
+            funcPtrType targetAddress,
+            InlineHookFunction hookFunction,
+            AllocationMethod allocationMethod = AllocationMethod::FarAlloc,
+            size_t alignment = 0x10
+        ) {
+            return Install(*reinterpret_cast<UnkfuncPtr*>(&targetAddress), *reinterpret_cast<UnkfuncPtr*>(&hookFunction), allocationMethod, alignment);
+        }
+
+        void Uninstall() {}
+
+        bool IsInstalled() const {
+			return m_isInstalled;
+		}
+    private:
+        bool GenerateOriginalFunction(UnkfuncPtr targetAddress, size_t size);
+    private:
+        CPURegRepresentation m_regs;
+        void* m_location = nullptr; // The location we are hooking
+		UnkownFunctionData m_originalFunction; // The original function data
+        UnkownFunctionData m_customJITFunction; // The custom JIT function data
+		bool m_isInstalled = false;
     };
 }

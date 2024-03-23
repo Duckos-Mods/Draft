@@ -1,6 +1,11 @@
 #include "DraftHook.hpp"
 #include "DraftASM.hpp"
-
+#undef min
+#undef max
+#include <zasm/zasm.hpp>
+#include <zasm/x86/x86.hpp>
+#include <zasm/x86/assembler.hpp>
+using namespace zasm;
 
 namespace Draft
 {
@@ -125,6 +130,156 @@ namespace Draft
 			if (reinterpret_cast<char*>(targetFunction)[i] != 0xCC)
 				return false;
 		}
+		return true;
+	}
+	
+	// Tests
+
+	static void* allocatePage(std::size_t codeSize)
+	{
+#ifdef _WIN32
+		return VirtualAlloc(nullptr, codeSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+#else
+		// TODO: mmap for Linux.
+		return nullptr;
+#endif
+	}
+
+	// I actually have no idea if thats enough space cuz we do a lot of ASM stuff
+#define DRAFT_ALLOC_SIZE 0x400 
+	
+	bool InlineHook::Install(UnkfuncPtr targetAddress, InlineHookFunction hookFunction, AllocationMethod allocationMethod, size_t alignment)
+	{
+		DRAFT_HANDLE_ERR(IsInstalled(), return false);
+
+		size_t size = EnumToUnderlying<HookInstallMethod, size_t>(HookInstallMethod::Jump14byteInstall); // CBA to deal with the other sizes
+		ASMHandler temp(nullptr, 0);
+		size = temp.GetMinInstrSizeForMinsize(targetAddress, size);
+		SetToRWE(targetAddress, size);
+		GenerateOriginalFunction(targetAddress, size);
+		void* customJITFunction = nullptr;
+		if (allocationMethod == AllocationMethod::FarAlloc)
+			customJITFunction = allocatePage(DRAFT_ALLOC_SIZE);
+		else if (allocationMethod == AllocationMethod::NearAlloc)
+			SetToRWE<char>(RawAlineAlloc<char>(DRAFT_ALLOC_SIZE, alignment), DRAFT_ALLOC_SIZE);
+		else
+			return false;
+		memset(customJITFunction, 0xCC, DRAFT_ALLOC_SIZE);
+		this->m_customJITFunction.m_function = customJITFunction;
+		this->m_customJITFunction.m_size = DRAFT_ALLOC_SIZE;
+
+
+		zasm::Program program(zasm::MachineMode::AMD64);
+		zasm::x86::Assembler a(program);
+		zasm::Label label = a.createLabel();
+		// push all registers to a variable
+		a.bind(label);
+		uint64_t* CPUInfo = (uint64_t*)(void*)&this->m_regs; 
+		// A lot of ASM stuff
+		
+		// Saves the contents of the registers
+		{
+			a.push(x86::rsp); // push the trampoline RSP
+			a.push(x86::rsp); // push the original RSP
+			a.push(x86::rax); // Push RAX
+			a.mov(x86::rax, uint64_t(++CPUInfo)); // Move the address of the CPUInfo to RAX
+			for (size_t regID = ZYDIS_REGISTER_RBX; regID <= ZYDIS_REGISTER_R15; regID++)
+			{
+				x86::Gp64 reg(static_cast<x86::Reg::Id>(regID));
+				a.mov(x86::qword_ptr(x86::rax), reg);
+				a.add(x86::rax, 8);
+			}
+		}
+		
+		// handle EFLAGS
+		/*{
+			uint64_t EFLAGSPosition = (uint64_t)&this->m_regs.EFLAGS;
+			a.mov(x86::rax, EFLAGSPosition);
+			a.pushfq();
+			a.pop(x86::rcx);
+			a.mov(x86::qword_ptr(x86::rax), x86::rcx);
+		}*/
+
+		// Save the float registers
+		{
+			uint64_t FloatPosition = (uint64_t)&this->m_regs.XMM0;
+			a.mov(x86::rax, FloatPosition);
+			for (size_t regID = ZYDIS_REGISTER_XMM0; regID <= ZYDIS_REGISTER_XMM15; regID++)
+			{
+				x86::Xmm reg(static_cast<x86::Reg::Id>(regID));
+				a.movq(x86::qword_ptr(x86::rax), reg);
+				a.add(x86::rax, 16);
+			}
+		}
+
+		// Save RAX
+		{
+			a.pop(x86::rbx); // Pop the original RAX
+			a.mov(x86::rax, uint64_t(--CPUInfo)); // Move the address of the CPUInfo to RAX
+			a.mov(x86::qword_ptr(x86::rax), x86::rbx); // Save RAX
+		}
+
+		//Fix RSP
+		{
+			a.pop(x86::rax); // Pop the original RSP
+			a.add(x86::rax, 16); // Add 16 to the RSP
+			a.push(x86::rax); // Push the new RSP
+		}
+
+		// align stack, save original on the stack
+		{
+			a.push(x86::rsp);
+			a.sub(x86::rsp, 48);
+			a.and_(x86::rsp, -16);
+		}
+
+		// Call the hook function
+		{
+			uint64_t CPUInfoPosition = (uint64_t)&this->m_regs;
+			a.mov(x86::rdi, CPUInfoPosition);
+			a.mov(x86::rax, (uint64_t)hookFunction);
+			a.call(x86::rax);
+		}
+		
+		
+		
+		Serializer serializer{};
+		auto res = serializer.serialize(program, (uint64_t)this->m_customJITFunction.m_function);
+		DRAFT_HANDLE_ERR(res != Error::None, 
+			return false);
+
+		const auto* sect = serializer.getSectionInfo(0); // Only one section
+		const auto* data = serializer.getCode() + sect->offset;
+		DRAFT_HANDLE_ERR(sect->physicalSize > DRAFT_ALLOC_SIZE, return false);
+		ASMHandler asmHandler(reinterpret_cast<uint8_t*>(this->m_customJITFunction.m_function), DRAFT_ALLOC_SIZE);
+		asmHandler.Write(data, sect->physicalSize);
+		asmHandler.Write((const uint8_t*)this->m_originalFunction.m_function, this->m_originalFunction.m_size);
+		jmp64 jmp(reinterpret_cast<uintptr_t>(targetAddress) + this->m_originalFunction.m_size);
+		asmHandler.Write(jmp);
+		SetProtection(this->m_customJITFunction.m_function, DRAFT_ALLOC_SIZE, MemoryProtection::Execute);
+
+		ASMHandler targetHandler(reinterpret_cast<uint8_t*>(targetAddress), DRAFT_ALLOC_SIZE);
+		jmp64 jmpToCustom(reinterpret_cast<uintptr_t>(this->m_customJITFunction.m_function));
+		targetHandler.Write(jmpToCustom);
+		SetProtection(targetAddress, DRAFT_ALLOC_SIZE, MemoryProtection::Execute);
+
+		m_isInstalled = true;
+		return true;
+
+
+
+
+
+
+
+	}
+	bool InlineHook::GenerateOriginalFunction(UnkfuncPtr targetAddress, size_t size)
+	{
+		ASMHandler asmHandler(reinterpret_cast<uint8_t*>(targetAddress), size * 30);
+		size_t sliceSize = size;
+		this->m_originalFunction.m_function = RawAlloc<char>(sliceSize);
+		this->m_originalFunction.m_size = sliceSize;
+		memcpy(this->m_originalFunction.m_function, targetAddress, sliceSize);
 		return true;
 	}
 }

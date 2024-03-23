@@ -43,7 +43,7 @@ constexpr ProtectionType PXW = PAGE_EXECUTE_READWRITE;
 
 namespace Draft
 {
-	template<typename Enum, typename ReturnType = int>
+	template<typename Enum, typename ReturnType = uint64_t>
 	constexpr ReturnType EnumToUnderlying(Enum e) noexcept
 	{
 		return static_cast<ReturnType>(e);

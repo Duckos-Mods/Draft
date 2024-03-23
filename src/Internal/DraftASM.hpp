@@ -11,7 +11,7 @@ namespace Draft
     public:
         ASMHandler(uint8_t* code, size_t size) : m_code(code), m_size(size) {}
 
-        void Write(uint8_t* code, size_t size)
+        void Write(const uint8_t* code, size_t size)
         {
 			if (m_offset + size > m_size)
 				DRAFT_THROW("Buffer overflow");
@@ -25,6 +25,13 @@ namespace Draft
         {
 			Write(reinterpret_cast<uint8_t*>(&value), sizeof(T));
         }
+
+        void WriteByte(uint8_t value)
+		{
+            Write(&value, 1);
+        }
+
+
 
         size_t GetMinInstrSizeForMinsize(void* address, size_t minSize);
         size_t GetInstrSize(void* address);
